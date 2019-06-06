@@ -151,6 +151,7 @@ func build() {
 	generateGenesis()
 	buildMigrations()
 	buildPrereleaseTool()
+	buildDeploy()
 }
 
 func forcebuild() {
@@ -161,6 +162,7 @@ func forcebuild() {
 	generateGenesis()
 	buildMigrations()
 	buildPrereleaseTool()
+	buildDeploy()
 }
 
 func forceBuildFC() {
@@ -265,6 +267,12 @@ func buildFaucet() {
 	runCmd(cmd([]string{"go", "build", "-o", "./tools/faucet/faucet", "./tools/faucet/"}...))
 }
 
+func buildDeploy() {
+	log.Println("Building deploy...")
+
+	runCmd(cmd([]string{"go", "build", "-o", "./tools/fast/devnets/deploy/deploy", "./tools/fast/devnets/deploy/"}...))
+}
+
 func buildGenesisFileServer() {
 	log.Println("Building genesis file server...")
 
@@ -328,6 +336,10 @@ func main() {
 		buildFilecoin()
 	case "build-gengen":
 		buildGengen()
+	case "build-faucet":
+		buildFaucet()
+	case "build-deploy":
+		buildDeploy()
 	case "generate-genesis":
 		generateGenesis()
 	case "build-migrations":
