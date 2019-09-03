@@ -19,7 +19,7 @@ RUN go run ./build build-deploy
 RUN go run ./build build-gengen
 RUN go run ./build build-faucet
 
-FROM busybox:1-glibc AS filecoin
+FROM ubuntu:18.04 AS filecoin
 MAINTAINER Filecoin Dev Team
 
 # Base resources
@@ -36,7 +36,8 @@ COPY --from=builder /go/go-filecoin/gengen/gengen                        /usr/lo
 COPY --from=builder /go/go-filecoin/tools/faucet/faucet                  /usr/local/bin/faucet
 COPY --from=builder /go/go-filecoin/tools/fast/devnets/deploy/deploy     /usr/local/bin/deploy
 
-RUN adduser -D -h /var/filecoin -u 1000 -G users filecoin
+RUN adduser --home /var/filecoin -u 1000 --ingroup users --disabled-password --gecos "" filecoin
+RUN id filecoin
 
 ENV FILECOIN_PARAMETER_CACHE="/var/filecoin-proof-parameters"
 ENV FIL_PATH /var/filecoin/repo
