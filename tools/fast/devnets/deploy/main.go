@@ -108,7 +108,10 @@ func main() {
 			os.Exit(1)
 		}
 
-		p.Main()
+		if err := p.Main(); err != nil {
+			fmt.Printf("%s", err)
+			os.Exit(1)
+		}
 		break
 	default:
 		fmt.Printf("Invalid profile: %s\n", profile)
@@ -171,8 +174,8 @@ func NetworkPO(network string) fast.ProcessInitOption {
 	switch network {
 	case "user":
 		return fast.PODevnetUser()
-	case "test":
-		return fast.PODevnetTest()
+	case "stagingc":
+		return fast.PODevnetStaging()
 	case "nightly":
 		return fast.PODevnetNightly()
 	}
