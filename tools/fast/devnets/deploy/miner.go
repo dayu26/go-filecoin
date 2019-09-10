@@ -181,7 +181,7 @@ func WaitForAPI(ctx context.Context, p *fast.Filecoin) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(time.Minute):
-			if _, err := p.ID(); err != nil {
+			if _, err := p.ID(ctx); err != nil {
 				continue
 			}
 
