@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: genesis-nginx-configs
+  namespace: {{ .Release.Namespace }}
+data:
+  nginx.conf: |
+    server {
+      listen 8080;
+      location /genesis.car {
+        alias /opt/filecoin/genesis.car;
+      }
+    }
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: genesis-file-server-lb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: genesis-file-server
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{.Values.ALB.ACM}}"
+    external-dns.alpha.kubernetes.io/hostname: genesis-{{.Release.Namespace}}.kittyhawk.wtf
+    external-dns.alpha.kubernetes.io/alias: "true"
+    external-dns.alpha.kubernetes.io/ttl: "60"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 443
+      targetPort: 8080
+      name: file-server
+  selector:
+    app: genesis-file-server
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genesis-file-server
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: genesis-file-server
+  serviceName: "genesis-file-server"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: genesis-file-server
+    spec:
+      containers:
+        - name: genesis-file-server
+          image: nginx:1.17
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+            - name: genesis-car
+              mountPath: /opt/filecoin
+              readOnly: true
+      volumes:
+      - name: genesis-car
+        secret:
+          secretName: filecoin
+          items:
+            - key: genesis.car
+              path: genesis.car
+      - name: nginx-config-volume
+        configMap:
+          name: genesis-nginx-configs

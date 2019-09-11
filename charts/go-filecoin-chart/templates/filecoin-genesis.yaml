@@ -13,28 +13,32 @@ spec:
       name: api
     - port: 9797
       name: faucet
-    - port: 8080
-      name: file-server
   clusterIP: None
   selector:
     app: filecoin-genesis
 
-#---
+---
 
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: filecoin-genesis-lb
-#  namespace: {{ .Release.Namespace }}
-#  labels:
-#    app: filecoin-genesis
-#spec:
-#  type: LoadBalancer
-#  ports:
-#    - port: 9797
-#      name: faucet
-#  selector:
-#    app: filecoin-genesis
+apiVersion: v1
+kind: Service
+metadata:
+  name: filecoin-faucet-lb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: filecoin-genesis
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{.Values.ALB.ACM}}"
+    external-dns.alpha.kubernetes.io/hostname: faucet-{{.Release.Namespace}}.kittyhawk.wtf
+    external-dns.alpha.kubernetes.io/alias: "true"
+    external-dns.alpha.kubernetes.io/ttl: "60"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 443
+      targetPort: 9797
+      name: faucet
+  selector:
+    app: filecoin-genesis
 
 ---
 
@@ -131,18 +135,6 @@ spec:
             - name: devnet-secrets
               mountPath: /opt/filecoin
               readOnly: true
-        - name: genesis-file-server
-          image: "{{ .Values.Image }}"
-          imagePullPolicy: Always
-          command: [
-            "genesis-file-server"
-          ]
-          ports:
-            - containerPort: 8080
-          volumeMounts:
-            - name: devnet-secrets
-              mountPath: /opt/genesis
-              readOnly: true
       initContainers:
         - name: filecoin-init
           image: "{{ .Values.Image }}"
@@ -193,6 +185,9 @@ spec:
       - name: config-volume
         configMap:
           name: genesis-configs
+      - name: nginx-config-volume
+        configMap:
+          name: genesis-nginx-configs
   volumeClaimTemplates:
   - metadata:
       name: filecoin-storage-genesis
@@ -202,6 +197,3 @@ spec:
       resources:
         requests:
           storage: 20Gi
-
-
-

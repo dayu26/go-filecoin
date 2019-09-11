@@ -7,6 +7,7 @@ Image: "657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:fast-deploy-4"
 # For EKS
 StorageClassName: gp2
 ProofParamsDir: "/opt/filecoin-proof-parameters"
+EKSName: "alpha-eks"
 Bootstrap:
   Replicas: 3
   # Make sure no other services in eks cluster use this port + N replicas
@@ -28,5 +29,5 @@ Secrets:
   Peer2Key: ""
   Peer3Key: ""
 ALB:
-  ACM: "arn:aws:acm:us-east-1:657871693752:certificate/7850e0a8-931b-4d88-8d7d-b84650099fce"
+  ACM: "arn:aws:acm:us-east-1:657871693752:certificate/468a4a8a-3778-44ad-821f-d788bb2e898d"
   Domain: "kittyhawk.wtf"

@@ -36,8 +36,30 @@ data:
         proxy_set_header Referer "";
         proxy_set_header Origin "";
       }
-
     }
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: block-explorer-lb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: block-explorer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{.Values.ALB.ACM}}"
+    external-dns.alpha.kubernetes.io/hostname: explorer-{{.Release.Namespace}}.kittyhawk.wtf
+    external-dns.alpha.kubernetes.io/alias: "true"
+    external-dns.alpha.kubernetes.io/ttl: "60"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 443
+      targetPort: 8000
+      name: nginx
+  selector:
+    app: block-explorer
 
 ---
 
@@ -49,13 +71,11 @@ metadata:
   labels:
     app: block-explorer
 spec:
-  #type: LoadBalancer
   ports:
     - port: 8000
       name: nginx
   selector:
     app: block-explorer
-
 
 ---
 
