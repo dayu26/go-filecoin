@@ -124,7 +124,6 @@ const (
 	nightlyFilecoinBootstrap4 string = "/dns4/nightly.kittyhawk.wtf/tcp/9004/ipfs/QmZRnwmCjyNHgeNDiyT8mXRtGhP6uSzgHtrozc42crmVbg"
 )
 
-/*
 // user devnet addrs
 const (
 	userFilecoinBootstrap0 string = "/dns4/user.kittyhawk.wtf/tcp/9000/ipfs/Qmd6xrWYHsxivfakYRy6MszTpuAiEoFbgE1LWw4EvwBpp4"
@@ -133,13 +132,13 @@ const (
 	userFilecoinBootstrap3 string = "/dns4/user.kittyhawk.wtf/tcp/9003/ipfs/QmZGDLdQLUTi7uYTNavKwCd7SBc5KMfxzWxAyvqRQvwuiV"
 	userFilecoinBootstrap4 string = "/dns4/user.kittyhawk.wtf/tcp/9004/ipfs/QmZRnwmCjyNHgeNDiyT8mXRtGhP6uSzgHtrozc42crmVbg"
 )
-*/
+
 // user devnet addrs
 const (
-	userFilecoinBootstrap0 string = "/dns4/bootstrappers-0.alpha-staging.kittyhawk.wtf/tcp/30600/ipfs/QmcnXbqvMEwqG4RmWVgRggbLM4aNtu1BZ123qJDRpK6AqA"
-	userFilecoinBootstrap1 string = "/dns4/bootstrappers-1.alpha-staging.kittyhawk.wtf/tcp/30601/ipfs/QmXeMDTYcUm5qgASyRYU52QNc8rvjMY5eHgTGVmF6C2rn5"
-	userFilecoinBootstrap2 string = "/dns4/bootstrappers-2.alpha-staging.kittyhawk.wtf/tcp/30602/ipfs/QmbKWFbYgV7QRUNMQsQoUDJDVgaV7nm67LmrxkUTTKJDec"
-	)
+	alphaStagingFilecoinBootstrap0 string = "/dns4/bootstrappers-0.alpha-staging.kittyhawk.wtf/tcp/30600/ipfs/QmcnXbqvMEwqG4RmWVgRggbLM4aNtu1BZ123qJDRpK6AqA"
+	alphaStagingFilecoinBootstrap1 string = "/dns4/bootstrappers-1.alpha-staging.kittyhawk.wtf/tcp/30601/ipfs/QmXeMDTYcUm5qgASyRYU52QNc8rvjMY5eHgTGVmF6C2rn5"
+	alphaStagingFilecoinBootstrap2 string = "/dns4/bootstrappers-2.alpha-staging.kittyhawk.wtf/tcp/30602/ipfs/QmbKWFbYgV7QRUNMQsQoUDJDVgaV7nm67LmrxkUTTKJDec"
+)
 
 // DevnetStagingBootstrapAddrs are the dns multiaddrs for the nodes of the filecoin
 // staging devnet.
@@ -167,6 +166,14 @@ var DevnetUserBootstrapAddrs = []string{
 	userFilecoinBootstrap0,
 	userFilecoinBootstrap1,
 	userFilecoinBootstrap2,
-	//userFilecoinBootstrap3,
-	//userFilecoinBootstrap4,
+	userFilecoinBootstrap3,
+	userFilecoinBootstrap4,
+}
+
+// DevnetAlphaStagingBootstrapAddrs are the dns multiaddrs for the nodes of the filecoin
+// alpha staging devnet
+var DevnetAlphaStagingBootstrapAddrs = []string{
+	alphaStagingFilecoinBootstrap0,
+	alphaStagingFilecoinBootstrap1,
+	alphaStagingFilecoinBootstrap2,
 }

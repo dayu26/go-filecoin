@@ -40,6 +40,7 @@ var initCmd = &cmds.Command{
 		cmdkit.BoolOption(DevnetStaging, "when set, populates config bootstrap addrs with the dns multiaddrs of the staging devnet and other staging devnet specific bootstrap parameters."),
 		cmdkit.BoolOption(DevnetNightly, "when set, populates config bootstrap addrs with the dns multiaddrs of the nightly devnet and other nightly devnet specific bootstrap parameters"),
 		cmdkit.BoolOption(DevnetUser, "when set, populates config bootstrap addrs with the dns multiaddrs of the user devnet and other user devnet specific bootstrap parameters"),
+		cmdkit.BoolOption(DevnetAlphaStaging, "when set, populates config bootstrap addrs with the dns multiaddrs of the alpha staging devnet and other alpha staging devnet specific bootstrap parameters"),
 	},
 	Run: func(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error {
 		repoDir, _ := req.Options[OptionRepoDir].(string)
@@ -118,14 +119,15 @@ func setConfigFromOptions(cfg *config.Config, options cmdkit.OptMap) error {
 	devnetTest, _ := options[DevnetStaging].(bool)
 	devnetNightly, _ := options[DevnetNightly].(bool)
 	devnetUser, _ := options[DevnetUser].(bool)
+	devnetAlphaStaging, _ := options[DevnetAlphaStaging].(bool)
 	if (devnetTest && devnetNightly) || (devnetTest && devnetUser) || (devnetNightly && devnetUser) {
 		return fmt.Errorf(`cannot specify more than one "devnet-" option`)
 	}
 
 	// Setup devnet specific config options.
-	if devnetTest || devnetNightly || devnetUser {
-		cfg.Bootstrap.MinPeerThreshold = 1
-		cfg.Bootstrap.Period = "10s"
+	if devnetTest || devnetNightly || devnetUser || devnetAlphaStaging {
+		newConfig.Bootstrap.MinPeerThreshold = 1
+		newConfig.Bootstrap.Period = "10s"
 	}
 
 	// Setup devnet staging specific config options.
@@ -141,6 +143,11 @@ func setConfigFromOptions(cfg *config.Config, options cmdkit.OptMap) error {
 	// Setup devnet user specific config options.
 	if devnetUser {
 		cfg.Bootstrap.Addresses = fixtures.DevnetUserBootstrapAddrs
+	}
+
+	// Setup devnet alpha staging specific config options.
+	if devnetAlphaStaging {
+		newConfig.Bootstrap.Addresses = fixtures.DevnetAlphaStagingBootstrapAddrs
 	}
 
 	return nil
