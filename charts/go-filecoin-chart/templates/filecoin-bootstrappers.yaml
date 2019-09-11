@@ -6,6 +6,7 @@ metadata:
   name: bootstrap-configs
   namespace: {{ .Release.Namespace }}
 data:
+{{- $relnamespace := .Release.Namespace }}
 {{- range $k, $v := until (atoi (quote .Values.Bootstrap.Replicas) | default 3) }}
   {{- $peerIndex := add $v 1 }}
   filecoin-bootstrappers-{{$v}}-0.json: |
@@ -14,7 +15,7 @@ data:
       "GenesisCarFile":"/opt/filecoin/genesis.car",
       "PeerkeyFile": "/opt/filecoin/peer{{$peerIndex}}.key",
       "AutoSealInterval": 120,
-      "Network": "user",
+      "Network": "{{ $relnamespace }}",
       "BlockTime": "30s",
       "LogJSON": "1",
       "LogLevel":"5",

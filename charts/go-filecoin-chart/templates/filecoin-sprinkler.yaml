@@ -4,6 +4,7 @@ metadata:
   name: sprinkler-config
   namespace: {{ .Release.Namespace }}
 data:
+{{- $relnamespace := .Release.Namespace }}
   filecoin-sprinkler.json: |
     {
       "WorkingDir": "/var/filecoin",
@@ -11,7 +12,7 @@ data:
       "FaucetURL": "http://filecoin-genesis-0.filecoin-genesis.{{ .Release.Namespace }}.svc.cluster.local:9797/tap",
       "MaxPrice": "0.000000001",
       "AutoSealInterval": 120,
-      "Network": "user",
+      "Network": "{{ $relnamespace }}",
       "BlockTime": "30s",
       "LogJSON": "1",
       "LogLevel":"5"

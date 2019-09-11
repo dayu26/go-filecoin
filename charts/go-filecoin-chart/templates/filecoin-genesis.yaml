@@ -48,13 +48,14 @@ metadata:
   name: genesis-configs
   namespace: {{ .Release.Namespace }}
 data:
+{{- $relnamespace := .Release.Namespace }}
   filecoin-genesis-0.json: |
     {
       "WorkingDir": "/var/filecoin",
       "GenesisCarFile":"/opt/filecoin/genesis.car",
       "PeerkeyFile": "/opt/filecoin/peer0.key",
       "AutoSealInterval": 120,
-      "Network": "user",
+      "Network": "{{ $relnamespace }}",
       "BlockTime": "30s",
       "LogJSON": "1",
       "LogLevel":"5",
