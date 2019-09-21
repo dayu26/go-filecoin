@@ -36,12 +36,15 @@ metadata:
   namespace: {{ $this.Release.Namespace }}
   labels:
     app: filecoin-bootstrappers-{{$v}}
+    monitoring: prometheus
 spec:
   ports:
     - port: 6000
       name: swarm
     - port: 3453
       name: api
+    - port: 9400
+      name: prometheus
   clusterIP: None
   selector:
     app: filecoin-bootstrappers-{{$v}}
@@ -118,6 +121,7 @@ spec:
           ports:
             - containerPort: 6000
             - containerPort: 3453
+            - containerPort: 9400
           volumeMounts:
             - name: devnet-secrets
               mountPath: /opt/filecoin

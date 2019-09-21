@@ -5,12 +5,15 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: filecoin-genesis
+    monitoring: prometheus
 spec:
   ports:
     - port: 6000
       name: swarm
     - port: 3453
       name: api
+    - port: 9400
+      name: prometheus
     - port: 9797
       name: faucet
   clusterIP: None
@@ -110,6 +113,7 @@ spec:
           ports:
             - containerPort: 6000
             - containerPort: 3453
+            - containerPort: 9400
           volumeMounts:
             - name: devnet-secrets
               mountPath: /opt/filecoin
