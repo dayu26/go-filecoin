@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/filecoin-project/go-filecoin/commands"
@@ -60,6 +62,8 @@ func makepeerkey() ([]byte, string, error) {
 }
 
 func main() {
+	o := flag.String("o", "devnet-secrets.yaml", "specify output file to write Helm values to")
+	flag.Parse()
 	cfg := &gengen.GenesisCfg{
 		Keys: 1,
 		PreAlloc: []string{
@@ -129,8 +133,14 @@ func main() {
 	values.Secrets.Peer3Key = base64.StdEncoding.EncodeToString(p3)
 
 	d, err := yaml.Marshal(&values)
-	fmt.Printf("%s\n", string(d))
-	fmt.Println(id1)
-	fmt.Println(id2)
-	fmt.Println(id3)
+
+	err = ioutil.WriteFile(*o, d, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("saved file to", *o)
+	fmt.Println("boostrap0 peer id: ", id1)
+	fmt.Println("boostrap1 peer id: ", id2)
+	fmt.Println("boostrap2 peer id: ", id3)
 }
