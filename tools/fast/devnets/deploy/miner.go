@@ -28,7 +28,7 @@ type MinerConfig struct {
 	Collateral       int
 	AskPrice         string
 	AskExpiry        int
-	SectorSize       int
+	SectorSize       string
 }
 
 type MinerProfile struct {
@@ -157,7 +157,12 @@ func (p *MinerProfile) Post() error {
 
 		expiry := big.NewInt(int64(p.config.AskExpiry))
 
-		_, err = series.CreateStorageMinerWithAsk(ctx, miner, collateral, price, expiry)
+		sectorSize, ok := types.NewBytesAmountFromString(p.config.SectorSize, 10)
+		if !ok {
+			return fmt.Errorf("Failed to parse sector size %s", p.config.SectorSize)
+		}
+
+		_, err = series.CreateStorageMinerWithAsk(ctx, miner, collateral, price, expiry, sectorSize)
 		if err != nil {
 			return err
 		}
