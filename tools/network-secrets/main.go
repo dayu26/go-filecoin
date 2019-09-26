@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/filecoin-project/go-filecoin/commands"
 	"github.com/filecoin-project/go-filecoin/gengen/util"
@@ -62,8 +63,18 @@ func makepeerkey() ([]byte, string, error) {
 }
 
 func main() {
-	o := flag.String("o", "devnet-secrets.yaml", "specify output file to write Helm values to")
+	var output string = "<network>-values.yaml"
+	var network string = ""
+
+	flag.StringVar(&output, "output", output, "output file for Helm values")
+	flag.StringVar(&network, "network", network, "network name")
+
 	flag.Parse()
+
+	if len(network) == 0 {
+		log.Fatal("Please specify a network name")
+	}
+
 	cfg := &gengen.GenesisCfg{
 		Keys: 1,
 		PreAlloc: []string{
@@ -76,6 +87,7 @@ func main() {
 			},
 		},
 		ProofsMode: types.LiveProofsMode,
+		Network:    network,
 	}
 
 	gengen.ApplyProofsModeDefaults(cfg, cfg.ProofsMode == types.LiveProofsMode, true)
@@ -134,12 +146,14 @@ func main() {
 
 	d, err := yaml.Marshal(&values)
 
-	err = ioutil.WriteFile(*o, d, 0644)
+	output = strings.ReplaceAll(output, "<network>", network)
+
+	err = ioutil.WriteFile(output, d, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("saved file to", *o)
+	fmt.Println("saved file to", output)
 	fmt.Println("boostrap0 peer id: ", id1)
 	fmt.Println("boostrap1 peer id: ", id2)
 	fmt.Println("boostrap2 peer id: ", id3)
