@@ -10,7 +10,6 @@ COPY . /go/go-filecoin
 WORKDIR /go/go-filecoin
 
 RUN go mod download
-RUN ./scripts/install-rust-fil-proofs.sh
 RUN ./scripts/install-go-bls-sigs.sh
 RUN ./scripts/install-go-sectorbuilder.sh
 
