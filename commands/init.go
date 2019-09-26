@@ -128,8 +128,8 @@ func setConfigFromOptions(cfg *config.Config, options cmdkit.OptMap) error {
 
 	// Setup devnet specific config options.
 	if devnetTest || devnetNightly || devnetUser || devnetAlphaStaging || devnetPerson {
-		newConfig.Bootstrap.MinPeerThreshold = 1
-		newConfig.Bootstrap.Period = "10s"
+		cfg.Bootstrap.MinPeerThreshold = 1
+		cfg.Bootstrap.Period = "10s"
 	}
 
 	// Setup devnet staging specific config options.
@@ -149,11 +149,11 @@ func setConfigFromOptions(cfg *config.Config, options cmdkit.OptMap) error {
 
 	// Setup devnet alpha staging specific config options.
 	if devnetAlphaStaging {
-		newConfig.Bootstrap.Addresses = fixtures.DevnetAlphaStagingBootstrapAddrs
+		cfg.Bootstrap.Addresses = fixtures.DevnetAlphaStagingBootstrapAddrs
 	}
 
 	if devnetPerson {
-		newConfig.Bootstrap.Addresses = fixtures.DevnetPersonBootstrapAddrs
+		cfg.Bootstrap.Addresses = fixtures.DevnetPersonBootstrapAddrs
 	}
 
 	return nil
