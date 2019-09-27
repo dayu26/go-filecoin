@@ -58,6 +58,9 @@ func TestMinerWorkflow(t *testing.T) {
 		ask, err := series.CreateStorageMinerWithAsk(ctx, miner, askCollateral, askPrice, askExpiry, sinfo.Size)
 		require.NoError(t, err)
 
+		err = miner.MiningStart(ctx)
+		require.NoError(t, err)
+
 		t.Logf("Miner  %s", ask.Miner)
 		t.Logf("Ask ID %d", ask.ID)
 
