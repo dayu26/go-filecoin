@@ -6,7 +6,6 @@ import (
 	"time"
 
 	bserv "github.com/ipfs/go-blockservice"
-	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-hamt-ipld"
 	bstore "github.com/ipfs/go-ipfs-blockstore"
 	"github.com/ipfs/go-ipfs-exchange-offline"

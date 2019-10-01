@@ -40,7 +40,7 @@ func NewChainSelector(cs *hamt.CborIpldStore, actorState SnapshotGenerator, gCid
 // w(i) = w(i-1) + (P_i)^(P_n) * [V * num_blks + X ] 
 // P_n(n) = if n < 3:0 else: n, n is number of null rounds
 // X = log_2(total_storage(pSt)) 
-func (c* Expected) NewWeight(ctx context.Context, ts types.TipSet, pSt state.Tree) (uint64, error) {
+func (c *ChainSelector) NewWeight(ctx context.Context, ts types.TipSet, pSt state.Tree) (uint64, error) {
 	ctx = log.Start(ctx, "Expected.Weight")
 	log.LogKV(ctx, "Weight", ts.String())
 	if ts.Len() == 1 && ts.At(0).Cid().Equals(c.genesisCid) {
@@ -64,7 +64,8 @@ func (c* Expected) NewWeight(ctx context.Context, ts types.TipSet, pSt state.Tre
 	innerTerm.Mul(floatECV, floatNumBlocks)
 
 	// Add X to the weight's inner term
-	totalBytes, err := c.PwrTableView.Total(ctx, pSt, c.bstore)
+	powerTableView := c.createPowerTableView(pSt)
+	totalBytes, err := powerTableView.Total(ctx)	
 	if err != nil {
 		return uint64(0), err
 	}
@@ -87,8 +88,8 @@ func (c* Expected) NewWeight(ctx context.Context, ts types.TipSet, pSt state.Tre
 	return types.BigToFixed(w)	
 }
 
-// Weight returns the expected consensus weight of this TipSet in uint64
-// encoded fixed point representation.
+// Weight returns the EC weight of this TipSet in uint64 encoded fixed point
+// representation.
 func (c *ChainSelector) Weight(ctx context.Context, ts types.TipSet, pSt state.Tree) (uint64, error) {
 	ctx = log.Start(ctx, "Expected.Weight")
 	log.LogKV(ctx, "Weight", ts.String())
@@ -154,11 +155,11 @@ func (c *ChainSelector) IsHeavier(ctx context.Context, a, b types.TipSet, aState
 		}
 	}
 
-	aW, err := c.Weight(ctx, a, aSt)
+	aW, err := c.NewWeight(ctx, a, aSt)
 	if err != nil {
 		return false, err
 	}
-	bW, err := c.Weight(ctx, b, bSt)
+	bW, err := c.NewWeight(ctx, b, bSt)
 	if err != nil {
 		return false, err
 	}
