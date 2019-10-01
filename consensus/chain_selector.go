@@ -34,6 +34,59 @@ func NewChainSelector(cs *hamt.CborIpldStore, actorState SnapshotGenerator, gCid
 	}
 }
 
+// NewWeight returns the EC weight of this TipSet in uint64 encoded fixed point
+// representation.
+//
+// w(i) = w(i-1) + (P_i)^(P_n) * [V * num_blks + X ] 
+// P_n(n) = if n < 3:0 else: n, n is number of null rounds
+// X = log_2(total_storage(pSt)) 
+func (c* Expected) NewWeight(ctx context.Context, ts types.TipSet, pSt state.Tree) (uint64, error) {
+	ctx = log.Start(ctx, "Expected.Weight")
+	log.LogKV(ctx, "Weight", ts.String())
+	if ts.Len() == 1 && ts.At(0).Cid().Equals(c.genesisCid) {
+		return uint64(0), nil
+	}
+	// Compute parent weight.
+	parentW, err := ts.ParentWeight()
+	if err != nil {
+		return uint64(0), err
+	}
+
+	w, err := types.FixedToBig(parentW)
+	if err != nil {
+		return uint64(0), err
+	}
+
+	// Each block adds ECV to the weight's inner term
+	innerTerm := new(big.Float)
+	floatECV := new(big.Float).SetInt64(int64(ECV))
+	floatNumBlocks := new(big.Float).SetInt64(int64(ts.Len()))
+	innerTerm.Mul(floatECV, floatNumBlocks)
+
+	// Add X to the weight's inner term
+	totalBytes, err := c.PwrTableView.Total(ctx, pSt, c.bstore)
+	if err != nil {
+		return uint64(0), err
+	}
+	roughLogTotalBytes := new(big.Float).SetInt64(int64(totalBytes.BigInt().BitLen()))
+	innerTerm.Add(innerTerm, roughLogTotalBytes)
+	
+	// Attenuate weight by the number of null blocks
+	numNull := len(ts.At(0).Tickets) - 1
+	P := new(big.Float).SetInt64(int64(1))	
+	if numNull >= NullThresh {
+		bigP_i := new(big.Float).SetFloat64(P_i)
+		// P = P_i^numNull
+		for i := 0; i < numNull; i++ {
+			P.Mul(P, bigP_i)
+		}
+	}
+	update := new(big.Float)
+	update.Mul(innerTerm, P)
+	w.Add(w, update)
+	return types.BigToFixed(w)	
+}
+
 // Weight returns the expected consensus weight of this TipSet in uint64
 // encoded fixed point representation.
 func (c *ChainSelector) Weight(ctx context.Context, ts types.TipSet, pSt state.Tree) (uint64, error) {
