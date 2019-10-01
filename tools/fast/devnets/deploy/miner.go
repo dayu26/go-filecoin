@@ -19,6 +19,7 @@ import (
 	"github.com/filecoin-project/go-filecoin/tools/fast"
 	"github.com/filecoin-project/go-filecoin/tools/fast/series"
 	lpfc "github.com/filecoin-project/go-filecoin/tools/iptb-plugins/filecoin/local"
+	"github.com/filecoin-project/go-filecoin/types"
 )
 
 type MinerConfig struct {
