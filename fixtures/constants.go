@@ -142,9 +142,9 @@ const (
 
 // person devnet addrs
 const (
-	personFilecoinBootstrap0 string = "/dns4/bootstrappers-0.person.kittyhawk.wtf/tcp/30800/ipfs/QmQYZ6D4K73g34wZitadsPPHszQVg2iWyJfgJ1Bo1Bw54x"
-	personFilecoinBootstrap1 string = "/dns4/bootstrappers-1.person.kittyhawk.wtf/tcp/30801/ipfs/QmRApSqYNXGPQcaGVUHwppoy3HvzkdEp7mwRHUd7oEmGge"
-	personFilecoinBootstrap2 string = "/dns4/bootstrappers-2.person.kittyhawk.wtf/tcp/30802/ipfs/QmNRjHHCApCrHUHZBEXdfR7PC9fbAADJbbbHXWFz4JQPJV"
+	personFilecoinBootstrap0 string = "/dns4/bootstrappers-0.person.kittyhawk.wtf/tcp/30800/ipfs/QmVsQTkx1aTTEJPCkfrLPiqyLjGWDYLxhk9uTx7Y9vpsAN"
+	personFilecoinBootstrap1 string = "/dns4/bootstrappers-1.person.kittyhawk.wtf/tcp/30801/ipfs/QmXCuoJNpRSwopXLTytLkqNkn121gfYakYgUEyzSKi4aSA"
+	personFilecoinBootstrap2 string = "/dns4/bootstrappers-2.person.kittyhawk.wtf/tcp/30802/ipfs/QmdJ6hqcsLHwY6yRF84h3KqtMedRcagDn9AJbjWHFQ6DXJ"
 )
 
 // DevnetStagingBootstrapAddrs are the dns multiaddrs for the nodes of the filecoin
