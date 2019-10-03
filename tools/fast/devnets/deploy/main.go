@@ -59,8 +59,8 @@ type Profile interface {
 }
 
 func main() {
-	validProfiles := []string{"genesis", "bootstrap", "miner"}
-	validSteps := []string{"pre", "daemon", "post"}
+	validProfiles := []string{"genesis", "bootstrap", "miner", "power-miner"}
+	validSteps := []string{"pre", "daemon", "post", "main"}
 
 	var profile string
 	var step string
@@ -94,6 +94,15 @@ func main() {
 		runStep(step, p)
 	case "miner":
 		p, err := NewMinerProfile(config)
+		if err != nil {
+			fmt.Printf("%s", err)
+			os.Exit(1)
+		}
+
+		runStep(step, p)
+		break
+	case "power-miner":
+		p, err := NewPowerMinerProfile(config)
 		if err != nil {
 			fmt.Printf("%s", err)
 			os.Exit(1)
@@ -136,6 +145,12 @@ func runStep(step string, p Profile) {
 		break
 	case "post":
 		if err := p.Post(); err != nil {
+			fmt.Printf("%s", err)
+			os.Exit(1)
+		}
+		break
+	case "main":
+		if err := p.Main(); err != nil {
 			fmt.Printf("%s", err)
 			os.Exit(1)
 		}
