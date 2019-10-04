@@ -19,6 +19,7 @@ type ChainSubmodule struct {
 	MessageStore *chain.MessageStore
 	Syncer       nodeChainSyncer
 	ActorState   *consensus.ActorStateStore
+
 	// HeavyTipSetCh is a subscription to the heaviest tipset topic on the chain.
 	// https://github.com/filecoin-project/go-filecoin/issues/2309
 	HeaviestTipSetCh chan interface{}
