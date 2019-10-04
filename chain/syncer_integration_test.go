@@ -51,7 +51,8 @@ func TestLoadFork(t *testing.T) {
 	// Note: the chain builder is passed as the fetcher, from which blocks may be requested, but
 	// *not* as the store, to which the syncer must ensure to put blocks.
 	eval := &chain.FakeStateEvaluator{}
-	syncer := chain.NewSyncer(eval, store, builder, builder, chain.NewStatusReporter(), th.NewFakeClock(time.Unix(1234567890, 0)))
+	sel := &chain.FakeChainSelector{}
+	syncer := chain.NewSyncer(eval, sel, store, builder, builder, chain.NewStatusReporter(), th.NewFakeClock(time.Unix(1234567890, 0)))
 
 	base := builder.AppendManyOn(3, genesis)
 	left := builder.AppendManyOn(4, base)
@@ -79,7 +80,7 @@ func TestLoadFork(t *testing.T) {
 	newStore := chain.NewStore(repo.ChainDatastore(), &cborStore, &state.TreeStateLoader{}, chain.NewStatusReporter(), genesis.At(0).Cid())
 	require.NoError(t, newStore.Load(ctx))
 	fakeFetcher := th.NewTestFetcher()
-	offlineSyncer := chain.NewSyncer(eval, newStore, builder, fakeFetcher, chain.NewStatusReporter(), th.NewFakeClock(time.Unix(1234567890, 0)))
+	offlineSyncer := chain.NewSyncer(eval, sel, newStore, builder, fakeFetcher, chain.NewStatusReporter(), th.NewFakeClock(time.Unix(1234567890, 0)))
 
 	assert.True(t, newStore.HasTipSetAndState(ctx, left.Key()))
 	assert.False(t, newStore.HasTipSetAndState(ctx, right.Key()))
@@ -169,14 +170,14 @@ func TestTipSetWeightDeep(t *testing.T) {
 	emptyReceiptsCid, err := messageStore.StoreReceipts(ctx, []*types.MessageReceipt{})
 	require.NoError(t, err)
 
-	// Initialize stores to contain dstP.genesis block and state
+	// Initialize stores to contain genesis block and state
 	calcGenTS := th.RequireNewTipSet(t, &calcGenBlk)
 	genTsas := &chain.TipSetAndState{
 		TipSet:          calcGenTS,
 		TipSetStateRoot: calcGenBlk.StateRoot,
 	}
 	require.NoError(t, chainStore.PutTipSetAndState(ctx, genTsas))
-	err = chainStore.SetHead(ctx, calcGenTS) // Initialize chainStore with correct dstP.genesis
+	err = chainStore.SetHead(ctx, calcGenTS) // Initialize chainStore with the genesis tipset
 	require.NoError(t, err)
 	requireHead(t, chainStore, calcGenTS)
 	requireTsAdded(t, chainStore, calcGenTS)
@@ -187,7 +188,8 @@ func TestTipSetWeightDeep(t *testing.T) {
 	// Now sync the chainStore with consensus using a PowerTableView.
 	as := consensus.NewActorStateStore(chainStore, cst, bs)
 	con := consensus.NewExpected(cst, bs, th.NewFakeProcessor(), th.NewFakeBlockValidator(), as, calcGenBlk.Cid(), th.BlockTimeTest, &consensus.FakeElectionMachine{}, &consensus.FakeTicketMachine{})
-	syncer := chain.NewSyncer(con, chainStore, messageStore, blockSource, chain.NewStatusReporter(), th.NewFakeClock(time.Unix(1234567890, 0)))
+	sel := consensus.NewChainSelector(cst, as, calcGenBlk.Cid())
+	syncer := chain.NewSyncer(con, sel, chainStore, messageStore, blockSource, chain.NewStatusReporter(), th.NewFakeClock(time.Unix(1234567890, 0)))
 	baseTS := requireHeadTipset(t, chainStore) // this is the last block of the bootstrapping chain creating miners
 	require.Equal(t, 1, baseTS.Len())
 	bootstrapStateRoot := baseTS.ToSlice()[0].StateRoot
@@ -206,14 +208,14 @@ func TestTipSetWeightDeep(t *testing.T) {
 	//  w({f1b1, f2b1})   = sw + 0   + 11 * 2  = sw + 22
 	//  w({f1b2a, f1b2b}) = sw + 11  + 11 * 2  = sw + 33
 	//  w({f2b2})         = sw + 11  + 108 	   = sw + 119
-	startingWeight, err := con.Weight(ctx, baseTS, pSt)
+	startingWeight, err := sel.Weight(ctx, baseTS, pSt)
 	require.NoError(t, err)
 
 	wFun := func(ts types.TipSet) (uint64, error) {
 		// No power-altering messages processed from here on out.
 		// And so bootstrapSt correctly retrives power table for all
 		// test blocks.
-		return con.Weight(ctx, ts, pSt)
+		return sel.Weight(ctx, ts, pSt)
 	}
 
 	fakeChildParams := th.FakeChildParams{
