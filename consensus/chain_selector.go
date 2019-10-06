@@ -72,13 +72,13 @@ func (c *ChainSelector) NewWeight(ctx context.Context, ts types.TipSet, pSt stat
 	roughLogTotalBytes := new(big.Float).SetInt64(int64(totalBytes.BigInt().BitLen()))
 	innerTerm.Add(innerTerm, roughLogTotalBytes)
 	
-	// Attenuate weight by the number of null blocks
-	numNull := len(ts.At(0).Tickets) - 1
+	// Attenuate weight by the number of tickets
+	numTickets := len(ts.At(0).Tickets) 
 	P := new(big.Float).SetInt64(int64(1))	
-	if numNull >= NullThresh {
+	if numTickets >= NullThresh {
 		bigP_i := new(big.Float).SetFloat64(P_i)
 		// P = P_i^numNull
-		for i := 0; i < numNull; i++ {
+		for i := 0; i < numTickets; i++ {
 			P.Mul(P, bigP_i)
 		}
 	}
