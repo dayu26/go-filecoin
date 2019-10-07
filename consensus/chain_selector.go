@@ -5,7 +5,6 @@ package consensus
 
 import (
 	"fmt"
-
 	"bytes"
 	"context"
 	"math/big"
