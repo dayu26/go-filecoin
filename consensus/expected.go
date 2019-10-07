@@ -51,22 +51,6 @@ var (
 // We also use this to enforce a soft block validation.
 const DefaultBlockTime = 30 * time.Second
 
-// TODO none of these parameters are chosen correctly
-// with respect to analysis under a security model:
-// https://github.com/filecoin-project/go-filecoin/issues/1846
-
-// NewECV is the constant V defined in the EC spec.
-const NewECV uint64 = 2
-// P_i is the multiplicand in the null penalty term
-const P_i float64 = 0.87
-// NullThresh is the min number of null rounds before the penalty kicks in
-const NullThresh = 3
-
-// ECV is the constant V defined in the EC spec.
-const ECV uint64 = 10
-// ECPrM is the power ratio magnitude defined in the EC spec.
-const ECPrM uint64 = 100
-
 // AncestorRoundsNeeded is the number of rounds of the ancestor chain needed
 // to process all state transitions.
 //
