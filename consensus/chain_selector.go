@@ -17,8 +17,10 @@ import (
 	"github.com/filecoin-project/go-filecoin/types"
 )
 
+// ChainSelector weighs and compares chains according to the Storage Power
+// Consensus Protocol
 type ChainSelector struct {
-	cstore *hamt.CborIpldStore
+	cstore     *hamt.CborIpldStore
 	actorState SnapshotGenerator
 	genesisCid cid.Cid
 }
@@ -26,9 +28,9 @@ type ChainSelector struct {
 // NewChainSelector is the constructor for chain selection module.
 func NewChainSelector(cs *hamt.CborIpldStore, actorState SnapshotGenerator, gCid cid.Cid) *ChainSelector {
 	return &ChainSelector{
-		cstore:            cs,
-		actorState:        actorState,
-		genesisCid:        gCid,
+		cstore:     cs,
+		actorState: actorState,
+		genesisCid: gCid,
 	}
 }
 

@@ -425,7 +425,7 @@ func (b *Builder) buildChain(ctx context.Context, blockstore *BlockstoreSubmodul
 	// set up consensus
 	actorState := consensus.NewActorStateStore(chainStore, blockstore.cborStore, blockstore.Blockstore)
 	nodeConsensus := consensus.NewExpected(blockstore.cborStore, blockstore.Blockstore, processor, blkValid, actorState, b.genCid, b.BlockTime, consensus.ElectionMachine{}, consensus.TicketMachine{})
-	nodeChainSelector := consensus.NewChainSelector(blockstore.cborStore, actorState, b.genCid)	
+	nodeChainSelector := consensus.NewChainSelector(blockstore.cborStore, actorState, b.genCid)
 
 	// setup fecher
 	graphsyncNetwork := gsnet.NewFromLibp2pHost(network.host)
