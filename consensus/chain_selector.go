@@ -4,6 +4,8 @@ package consensus
 // See: https://github.com/filecoin-project/specs/blob/master/expected-consensus.md
 
 import (
+	"fmt"
+	
 	"bytes"
 	"context"
 	"math/big"
@@ -74,7 +76,7 @@ func (c *ChainSelector) NewWeight(ctx context.Context, ts types.TipSet, pSt stat
 
 	// Each block adds ECV to the weight's inner term
 	innerTerm := new(big.Float)
-	floatECV := new(big.Float).SetInt64(int64(ECV))
+	floatECV := new(big.Float).SetInt64(int64(NewECV))
 	floatNumBlocks := new(big.Float).SetInt64(int64(ts.Len()))
 	innerTerm.Mul(floatECV, floatNumBlocks)
 
@@ -100,6 +102,8 @@ func (c *ChainSelector) NewWeight(ctx context.Context, ts types.TipSet, pSt stat
 	update := new(big.Float)
 	update.Mul(innerTerm, P)
 	w.Add(w, update)
+
+	fmt.Printf("ts key: %s -- weight: %s\n", ts.String(), w.String())
 	return types.BigToFixed(w)
 }
 
