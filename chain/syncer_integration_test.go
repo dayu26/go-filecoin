@@ -124,7 +124,10 @@ func TestSyncerWeighsPower(t *testing.T) {
 	builder.SetStateBuilder(isb)
 
 	// Construct genesis with readable state tree root
-	gen := builder.NewGenesis()
+	gen := builder.BuildOneOn(types.UndefTipSet, func(bb *chain.BlockBuilder) {
+		// only test new syncing behavior		
+		bb.IncHeight(consensus.AlphaNetUpgrade)
+	})
 
 	// Builder constructs two different blocks with different state trees
 	// for building two forks.

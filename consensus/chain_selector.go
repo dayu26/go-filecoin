@@ -19,6 +19,9 @@ import (
 	"github.com/filecoin-project/go-filecoin/types"
 )
 
+
+var AlphaNetUpgrade = types.NewBlockHeight(300)
+
 // NewECV is the constant V defined in the EC spec.
 const NewECV uint64 = 2
 
@@ -34,8 +37,8 @@ const ECV uint64 = 10
 // ECPrM is the power ratio magnitude defined in the EC spec.
 const ECPrM uint64 = 100
 
-// ChainSelector weighs and compares chains according to the Storage Power
-// Consensus Protocol
+// ChainSelectorV0 weighs and compares chains according to the deprecated v0
+// Storage Power Consensus Protocol
 type ChainSelector struct {
 	cstore     *hamt.CborIpldStore
 	actorState SnapshotGenerator
@@ -174,11 +177,31 @@ func (c *ChainSelector) IsHeavier(ctx context.Context, a, b types.TipSet, aState
 		}
 	}
 
-	aW, err := c.NewWeight(ctx, a, aSt)
+
+	// Select weighting function based on protocol version
+	aWfun := c.Weight
+	aHeight, err := a.Height()
 	if err != nil {
 		return false, err
 	}
-	bW, err := c.NewWeight(ctx, b, bSt)
+	if aHeight.GreaterEqual(AlphaNetUpgrade) {
+		aWfun = c.NewWeight
+	}
+	
+	bWfun := c.Weight
+	bHeight, err := b.Height()
+	if err != nil {
+		return false, err
+	}
+	if bHeight.GreaterEqual(AlphaNetUpgrade) {
+		bWfun = c.NewWeight
+	}
+
+	aW, err := aWfun(ctx, a, aSt)
+	if err != nil {
+		return false, err
+	}
+	bW, err := bWfun(ctx, b, bSt)
 	if err != nil {
 		return false, err
 	}
