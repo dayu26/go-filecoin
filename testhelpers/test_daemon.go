@@ -214,6 +214,7 @@ func (td *TestDaemon) GetAddresses() []string {
 // the operation was successful.
 func (td *TestDaemon) ConnectSuccess(remote *TestDaemon) *CmdOutput {
 	remoteAddrs := remote.GetAddresses()
+	// Updating this delay to 1 second to accomodate needs of gossipsub
 	delay := 100 * time.Millisecond
 
 	// Connect the nodes

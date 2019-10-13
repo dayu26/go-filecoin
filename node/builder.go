@@ -345,7 +345,7 @@ func (b *Builder) buildNetwork(ctx context.Context, config *config.BootstrapConf
 	// Set up libp2p network
 	// TODO: PubSub requires strict message signing, disabled for now
 	// reference issue: #3124
-	fsub, err := libp2pps.NewFloodSub(ctx, peerHost, libp2pps.WithMessageSigning(false))
+	gsub, err := libp2pps.NewGossipSub(ctx, peerHost, libp2pps.WithMessageSigning(false))
 	if err != nil {
 		return NetworkSubmodule{}, errors.Wrap(err, "failed to set up network")
 	}
@@ -359,7 +359,7 @@ func (b *Builder) buildNetwork(ctx context.Context, config *config.BootstrapConf
 	pingService := ping.NewPingService(peerHost)
 
 	// build network
-	network := net.New(peerHost, pubsub.NewPublisher(fsub), pubsub.NewSubscriber(fsub), net.NewRouter(router), bandwidthTracker, net.NewPinger(peerHost, pingService))
+	network := net.New(peerHost, pubsub.NewPublisher(gsub), pubsub.NewSubscriber(gsub), net.NewRouter(router), bandwidthTracker, net.NewPinger(peerHost, pingService))
 
 	// build the network submdule
 	return NetworkSubmodule{
@@ -369,19 +369,20 @@ func (b *Builder) buildNetwork(ctx context.Context, config *config.BootstrapConf
 		Bootstrapper: bootstrapper,
 		PeerTracker:  peerTracker,
 		Router:       router,
-		fsub:         fsub,
+		gsub:         gsub,
 		bitswap:      bswap,
 		Network:      network,
 	}, nil
 }
 
 func (b *Builder) buildMessaging(ctx context.Context, network *NetworkSubmodule, chain *ChainSubmodule, wallet *WalletSubmodule) (MessagingSubmodule, error) {
-	msgPool := message.NewPool(b.Repo.Config().Mpool, consensus.NewIngestionValidator(chain.State, b.Repo.Config().Mpool))
+	poolValidator := consensus.NewIngestionValidator(chain.State, b.Repo.Config().Mpool)
+	msgPool := message.NewPool(b.Repo.Config().Mpool, poolValidator)
 	inbox := message.NewInbox(msgPool, message.InboxMaxAgeTipsets, chain.ChainReader, chain.MessageStore)
 
 	msgQueue := message.NewQueue()
 	outboxPolicy := message.NewMessageQueuePolicy(chain.MessageStore, message.OutboxMaxAgeRounds)
-	msgPublisher := message.NewDefaultPublisher(pubsub.NewPublisher(network.fsub), net.MessageTopic(network.NetworkName), msgPool)
+	msgPublisher := message.NewDefaultPublisher(pubsub.NewPublisher(network.gsub), net.MessageTopic(network.NetworkName), msgPool)
 	outbox := message.NewOutbox(wallet.Wallet, consensus.NewOutboundMessageValidator(), msgQueue, msgPublisher, outboxPolicy, chain.ChainReader, chain.State, b.Journal.Topic("outbox"))
 
 	return MessagingSubmodule{
@@ -428,9 +429,9 @@ func (b *Builder) buildChain(ctx context.Context, blockstore *BlockstoreSubmodul
 	// TODO when #2961 is resolved do the needful here.
 	blkValid := consensus.NewDefaultBlockValidator(b.BlockTime, b.Clock, pvt)
 
-	// register block validation on floodsub
+	// register block validation on gossipsub
 	btv := net.NewBlockTopicValidator(blkValid)
-	if err := network.fsub.RegisterTopicValidator(btv.Topic(network.NetworkName), btv.Validator(), btv.Opts()...); err != nil {
+	if err := network.gsub.RegisterTopicValidator(btv.Topic(network.NetworkName), btv.Validator(), btv.Opts()...); err != nil {
 		return ChainSubmodule{}, errors.Wrap(err, "failed to register block validator")
 	}
 

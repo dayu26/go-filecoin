@@ -2,6 +2,7 @@ package series
 
 import (
 	"context"
+	"time"
 
 	"github.com/filecoin-project/go-filecoin/tools/fast"
 )
@@ -16,6 +17,7 @@ func Connect(ctx context.Context, from, to *fast.Filecoin) error {
 	if _, err := from.SwarmConnect(ctx, details.Addresses...); err != nil {
 		return err
 	}
-
+	// Adding this to accomodate gossipsub :(
+	time.Sleep(100 * time.Millisecond)
 	return nil
 }

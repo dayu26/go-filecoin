@@ -78,7 +78,7 @@ func TestBlockPropsManyNodes(t *testing.T) {
 
 	nextBlk := requireMineOnce(ctx, t, minerNode)
 	// Wait for network connection notifications to propagate
-	time.Sleep(time.Millisecond * 300)
+	time.Sleep(time.Second)
 
 	assert.NoError(t, minerNode.AddNewBlock(ctx, nextBlk))
 
