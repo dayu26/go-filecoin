@@ -60,17 +60,17 @@ import (
 
 // Builder is a helper to aid in the construction of a filecoin node.
 type Builder struct {
-	BlockTime   time.Duration
-	Libp2pOpts  []libp2p.Option
-	OfflineMode bool
-	Verifier    verification.Verifier
-	Rewarder    consensus.BlockRewarder
-	Repo        repo.Repo
-	Journal     journal.Journal
-	IsRelay     bool
-	Clock       clock.Clock
+	BlockTime          time.Duration
+	Libp2pOpts         []libp2p.Option
+	OfflineMode        bool
+	Verifier           verification.Verifier
+	Rewarder           consensus.BlockRewarder
+	Repo               repo.Repo
+	Journal            journal.Journal
+	IsRelay            bool
+	Clock              clock.Clock
 	GossipsubHeartbeat time.Duration
-	genCid      cid.Cid
+	genCid             cid.Cid
 }
 
 // BuilderOpt is an option for building a filecoin node.
@@ -156,8 +156,8 @@ func JournalConfigOption(jrl journal.Journal) BuilderOpt {
 func New(ctx context.Context, opts ...BuilderOpt) (*Node, error) {
 	// initialize builder and set base values
 	n := &Builder{
-		OfflineMode: false,
-		GossipsubHeartbeat: libp2pps.GossipSubHeartbeatInterval,
+		OfflineMode:        false,
+		GossipsubHeartbeat: pubsub.DefaultGossipsubHeartbeat,
 	}
 
 	// apply builder options

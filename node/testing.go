@@ -194,6 +194,7 @@ func DefaultTestingConfig() []BuilderOpt {
 			VerifyPieceInclusionProofValid: true,
 			VerifySealValid:                true,
 		}),
+		GossipsubHeartbeat(th.GossipsubHeartbeatTest),
 	}
 }
 

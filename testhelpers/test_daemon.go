@@ -214,8 +214,8 @@ func (td *TestDaemon) GetAddresses() []string {
 // the operation was successful.
 func (td *TestDaemon) ConnectSuccess(remote *TestDaemon) *CmdOutput {
 	remoteAddrs := remote.GetAddresses()
-	// Updating this delay to 1 second to accomodate needs of gossipsub
-	delay := 100 * time.Millisecond
+	// This delay is necessary to accommodate gossipsub
+	delay := GossipsubHeartbeatTest
 
 	// Connect the nodes
 	// This usually works on the first try, but leaving this here, to ensure we
@@ -738,8 +738,9 @@ func NewDaemon(t *testing.T, options ...func(*TestDaemon)) *TestDaemon {
 	swarmListenFlag := fmt.Sprintf("--swarmlisten=%s", swarmAddr)
 
 	blockTimeFlag := fmt.Sprintf("--block-time=%s", BlockTimeTest)
+	gossipsubHeartbeatFlag := fmt.Sprintf("--gossipsub-heartbeat=%s", GossipsubHeartbeatTest)
 
-	td.daemonArgs = []string{filecoinBin, "daemon", repoDirFlag, cmdAPIAddrFlag, swarmListenFlag, blockTimeFlag}
+	td.daemonArgs = []string{filecoinBin, "daemon", repoDirFlag, cmdAPIAddrFlag, swarmListenFlag, blockTimeFlag, gossipsubHeartbeatFlag}
 
 	if td.isRelay {
 		td.daemonArgs = append(td.daemonArgs, "--is-relay")

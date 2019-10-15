@@ -14,10 +14,10 @@ import (
 	cmds "github.com/ipfs/go-ipfs-cmds"
 	cmdhttp "github.com/ipfs/go-ipfs-cmds/http"
 	writer "github.com/ipfs/go-log/writer"
+	libp2pps "github.com/libp2p/go-libp2p-pubsub"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
 	"github.com/pkg/errors"
-	libp2pps "github.com/libp2p/go-libp2p-pubsub" 
 
 	"github.com/filecoin-project/go-filecoin/clock"
 	"github.com/filecoin-project/go-filecoin/config"
@@ -104,7 +104,7 @@ func daemonRun(req *cmds.Request, re cmds.ResponseEmitter) error {
 	if err != nil {
 		return errors.Wrap(err, "Bad gossipsub heartbeat passed")
 	}
-	
+
 	opts = append(opts, node.BlockTime(blockTime))
 	opts = append(opts, node.ClockConfigOption(clock.NewSystemClock()))
 	opts = append(opts, node.GossipsubHeartbeat(heartbeat))
