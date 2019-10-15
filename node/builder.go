@@ -69,6 +69,7 @@ type Builder struct {
 	Journal     journal.Journal
 	IsRelay     bool
 	Clock       clock.Clock
+	GossipsubHeartbeat time.Duration
 	genCid      cid.Cid
 }
 
@@ -95,6 +96,14 @@ func IsRelay() BuilderOpt {
 func BlockTime(blockTime time.Duration) BuilderOpt {
 	return func(c *Builder) error {
 		c.BlockTime = blockTime
+		return nil
+	}
+}
+
+// GossipsubHeartbeat sets the pubsub gossipsub heartbeat.
+func GossipsubHeartbeat(heartbeat time.Duration) BuilderOpt {
+	return func(c *Builder) error {
+		c.GossipsubHeartbeat = heartbeat
 		return nil
 	}
 }
@@ -148,6 +157,7 @@ func New(ctx context.Context, opts ...BuilderOpt) (*Node, error) {
 	// initialize builder and set base values
 	n := &Builder{
 		OfflineMode: false,
+		GossipsubHeartbeat: libp2pps.GossipSubHeartbeatInterval,
 	}
 
 	// apply builder options
@@ -349,6 +359,10 @@ func (b *Builder) buildNetwork(ctx context.Context, config *config.BootstrapConf
 	if err != nil {
 		return NetworkSubmodule{}, errors.Wrap(err, "failed to set up network")
 	}
+	// The gossipsub heartbeat timeout needs to be set sufficiently low
+	// to enable publishing on first connection.  The default of one
+	// second is not acceptable for tests.
+	libp2pps.GossipSubHeartbeatInterval = b.GossipsubHeartbeat
 
 	// set up bitswap
 	nwork := bsnet.NewFromIpfsHost(peerHost, router)

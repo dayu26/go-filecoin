@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
