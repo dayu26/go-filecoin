@@ -10,7 +10,7 @@ import (
 // We store it here separately so that multiple tests can reference a static
 // value instead of the mutable global var in the pubsub package.  This should
 // be updated when go-libp2p-pubsub updates the variable.
-const DefaultGossipsubHeartbeat = time.Second
+const DefaultGossipsubHeartbeat = 100 * time.Millisecond
 
 // Publisher publishes to pubsub topics
 type Publisher struct {
