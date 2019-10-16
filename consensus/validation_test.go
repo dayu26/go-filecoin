@@ -40,54 +40,54 @@ func TestMessageValidator(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 100, 5, 1, 0)
-		assert.NoError(t, validator.Validate(ctx, msg, actor))
+		assert.NoError(t, validator.ValidateSignature(ctx, msg))
 	})
 
 	t.Run("invalid signature fails", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 100, 5, 1, 0)
 		msg.Signature = []byte{}
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "signature")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "signature")
 
 	})
 
 	t.Run("self send fails", func(t *testing.T) {
 		msg := newMessage(t, alice, alice, 100, 5, 1, 0)
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "self")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "self")
 	})
 
 	t.Run("non-account actor fails", func(t *testing.T) {
 		badActor := newActor(t, 1000, 100)
 		badActor.Code = types.CidFromString(t, "somecid")
 		msg := newMessage(t, alice, bob, 100, 5, 1, 0)
-		assert.Errorf(t, validator.Validate(ctx, msg, badActor), "account")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, badActor), "account")
 	})
 
 	t.Run("negative value fails", func(t *testing.T) {
 		msg := newMessage(t, alice, alice, 100, -5, 1, 0)
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "negative")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "negative")
 	})
 
 	t.Run("block gas limit fails", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 100, 5, 1, uint64(types.BlockGasLimit)+1)
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "block limit")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "block limit")
 	})
 
 	t.Run("can't cover value", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 100, 2000, 1, 0) // lots of value
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "funds")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "funds")
 
 		msg = newMessage(t, alice, bob, 100, 5, 100000, 200) // lots of expensive gas
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "funds")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "funds")
 	})
 
 	t.Run("low nonce", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 99, 5, 1, 0)
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "too low")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "too low")
 	})
 
 	t.Run("high nonce", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 101, 5, 1, 0)
-		assert.Errorf(t, validator.Validate(ctx, msg, actor), "too high")
+		assert.Errorf(t, validator.Validate(ctx, &msg.MeteredMessage, actor), "too high")
 	})
 }
 
@@ -103,9 +103,9 @@ func TestOutboundMessageValidator(t *testing.T) {
 
 	t.Run("allows high nonce", func(t *testing.T) {
 		msg := newMessage(t, alice, bob, 100, 5, 1, 0)
-		assert.NoError(t, validator.Validate(ctx, msg, actor))
+		assert.NoError(t, validator.Validate(ctx, &msg.MeteredMessage, actor))
 		msg = newMessage(t, alice, bob, 101, 5, 1, 0)
-		assert.NoError(t, validator.Validate(ctx, msg, actor))
+		assert.NoError(t, validator.Validate(ctx, &msg.MeteredMessage, actor))
 	})
 }
 

@@ -28,38 +28,36 @@ func init() {
 	errNonceTooHighCt = metrics.NewInt64Counter("consensus/msg_nonce_high_err", "Number of messages with nonce too high")
 }
 
-// SignedMessageValidator validates incoming signed messages.
-type SignedMessageValidator interface {
-	// Validate checks that a message is semantically valid for processing, returning any
-	// invalidity as an error
-	Validate(ctx context.Context, msg *types.SignedMessage, fromActor *actor.Actor) error
-}
-
-type defaultMessageValidator struct {
+// DefaultMessageValidator validates incoming signed messages.
+type DefaultMessageValidator struct {
 	allowHighNonce bool
 }
 
 // NewDefaultMessageValidator creates a new default validator.
 // A default validator checks for both permanent semantic problems (e.g. invalid signature)
 // as well as temporary conditions which may change (e.g. actor can't cover gas limit).
-func NewDefaultMessageValidator() SignedMessageValidator {
-	return &defaultMessageValidator{}
+func NewDefaultMessageValidator() *DefaultMessageValidator {
+	return &DefaultMessageValidator{}
 }
 
 // NewOutboundMessageValidator creates a new default validator for outbound messages. This
 // validator matches the default behaviour but allows nonces higher than the actor's current nonce
 // (allowing multiple messages to enter the mpool at once).
-func NewOutboundMessageValidator() SignedMessageValidator {
-	return &defaultMessageValidator{allowHighNonce: true}
+func NewOutboundMessageValidator() *DefaultMessageValidator {
+	return &DefaultMessageValidator{allowHighNonce: true}
 }
 
-var _ SignedMessageValidator = (*defaultMessageValidator)(nil)
-
-func (v *defaultMessageValidator) Validate(ctx context.Context, msg *types.SignedMessage, fromActor *actor.Actor) error {
+// ValidateSignature checks a message's signature, returning an error if invalid.
+func (v *DefaultMessageValidator) ValidateSignature(ctx context.Context, msg *types.SignedMessage) error {
 	if !msg.VerifySignature() {
 		return errInvalidSignature
 	}
+	return nil
+}
 
+// Validate checks that a message is semantically valid for processing, returning any
+// invalidity as an error.
+func (v *DefaultMessageValidator) Validate(ctx context.Context, msg *types.MeteredMessage, fromActor *actor.Actor) error {
 	if msg.From == msg.To {
 		return errSelfSend
 	}
@@ -111,7 +109,7 @@ func (v *defaultMessageValidator) Validate(ctx context.Context, msg *types.Signe
 // Check's whether the maximum gas charge + message value is within the actor's balance.
 // Note that this is an imperfect test, since nested messages invoked by this one may transfer
 // more value from the actor's balance.
-func canCoverGasLimit(msg *types.SignedMessage, actor *actor.Actor) bool {
+func canCoverGasLimit(msg *types.MeteredMessage, actor *actor.Actor) bool {
 	maximumGasCharge := msg.GasPrice.MulBigInt(big.NewInt(int64(msg.GasLimit)))
 	return maximumGasCharge.LessEqual(actor.Balance.Sub(msg.Value))
 }
@@ -125,7 +123,7 @@ type ingestionValidatorAPI interface {
 type IngestionValidator struct {
 	api       ingestionValidatorAPI
 	cfg       *config.MessagePoolConfig
-	validator defaultMessageValidator
+	validator *DefaultMessageValidator
 }
 
 // NewIngestionValidator creates a new validator with an api
@@ -133,7 +131,7 @@ func NewIngestionValidator(api ingestionValidatorAPI, cfg *config.MessagePoolCon
 	return &IngestionValidator{
 		api:       api,
 		cfg:       cfg,
-		validator: defaultMessageValidator{allowHighNonce: true},
+		validator: &DefaultMessageValidator{allowHighNonce: true},
 	}
 }
 
@@ -155,5 +153,8 @@ func (v *IngestionValidator) Validate(ctx context.Context, msg *types.SignedMess
 		return errors.NewRevertErrorf("message nonce (%d) is too much greater than actor nonce (%d)", msg.Nonce, fromActor.Nonce)
 	}
 
-	return v.validator.Validate(ctx, msg, fromActor)
+	if err := v.validator.ValidateSignature(ctx, msg); err != nil {
+		return err
+	}
+	return v.validator.Validate(ctx, &msg.MeteredMessage, fromActor)
 }

@@ -60,16 +60,6 @@ func MakeRandomPoStProofForTest() types.PoStProof {
 	return poStProof
 }
 
-// FakeSignedMessageValidator is a validator that doesn't validate to simplify message creation in tests.
-type FakeSignedMessageValidator struct{}
-
-var _ consensus.SignedMessageValidator = (*FakeSignedMessageValidator)(nil)
-
-// Validate always returns nil
-func (tsmv *FakeSignedMessageValidator) Validate(ctx context.Context, msg *types.SignedMessage, fromActor *actor.Actor) error {
-	return nil
-}
-
 // FakeBlockRewarder is a rewarder that doesn't actually add any rewards to simplify state tracking in tests
 type FakeBlockRewarder struct{}
 
@@ -82,7 +72,7 @@ func (tbr *FakeBlockRewarder) BlockReward(ctx context.Context, st state.Tree, mi
 }
 
 // GasReward does nothing
-func (tbr *FakeBlockRewarder) GasReward(ctx context.Context, st state.Tree, minerAddr address.Address, msg *types.SignedMessage, cost types.AttoFIL) error {
+func (tbr *FakeBlockRewarder) GasReward(ctx context.Context, st state.Tree, minerOwnerAddr address.Address, msg *types.MeteredMessage, cost types.AttoFIL) error {
 	// do nothing to keep state root the same
 	return nil
 }
@@ -154,7 +144,7 @@ func (mbv *StubBlockValidator) StubSemanticValidationForBlock(child *types.Block
 
 // NewFakeProcessor creates a processor with a test validator and test rewarder
 func NewFakeProcessor() *consensus.DefaultProcessor {
-	return consensus.NewConfiguredProcessor(&FakeSignedMessageValidator{}, &FakeBlockRewarder{}, builtin.DefaultActors)
+	return consensus.NewConfiguredProcessor(&consensus.FakeMessageValidator{}, &FakeBlockRewarder{}, builtin.DefaultActors)
 }
 
 type testSigner struct{}
@@ -189,6 +179,9 @@ func ApplyTestMessageWithGas(actors builtin.Actors, st state.Tree, store vm.Stor
 func newMessageApplier(smsg *types.SignedMessage, processor *consensus.DefaultProcessor, st state.Tree, storageMap vm.StorageMap,
 	bh *types.BlockHeight, minerOwner address.Address, ancestors []types.TipSet) (*consensus.ApplicationResult, error) {
 	amr, err := processor.ApplyMessagesAndPayRewards(context.Background(), st, storageMap, []*types.SignedMessage{smsg}, minerOwner, bh, ancestors)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(amr.Results) > 0 {
 		return amr.Results[0], err
@@ -223,5 +216,5 @@ func applyTestMessageWithAncestors(actors builtin.Actors, st state.Tree, store v
 }
 
 func newTestApplier(actors builtin.Actors) *consensus.DefaultProcessor {
-	return consensus.NewConfiguredProcessor(&FakeSignedMessageValidator{}, &FakeBlockRewarder{}, actors)
+	return consensus.NewConfiguredProcessor(&consensus.FakeMessageValidator{}, &FakeBlockRewarder{}, actors)
 }

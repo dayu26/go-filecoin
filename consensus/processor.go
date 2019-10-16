@@ -29,13 +29,21 @@ var (
 	pbTimer = metrics.NewTimerMs("consensus/process_block", "Duration of block processing in milliseconds")
 )
 
+// MessageValidator validates the syntax and semantics of a message before it is applied.
+type MessageValidator interface {
+	// ValidateSignature checks a message's signature.
+	ValidateSignature(ctx context.Context, msg *types.SignedMessage) error
+	// Validate checks a message for validity.
+	Validate(ctx context.Context, msg *types.MeteredMessage, fromActor *actor.Actor) error
+}
+
 // BlockRewarder applies all rewards due to the miner's owner for processing a block including block reward and gas
 type BlockRewarder interface {
 	// BlockReward pays out the mining reward
 	BlockReward(ctx context.Context, st state.Tree, minerOwnerAddr address.Address) error
 
 	// GasReward pays gas from the sender to the miner
-	GasReward(ctx context.Context, st state.Tree, minerOwnerAddr address.Address, msg *types.SignedMessage, cost types.AttoFIL) error
+	GasReward(ctx context.Context, st state.Tree, minerOwnerAddr address.Address, msg *types.MeteredMessage, cost types.AttoFIL) error
 }
 
 // ApplicationResult contains the result of successfully applying one message.
@@ -58,9 +66,9 @@ type ProcessTipSetResponse struct {
 
 // DefaultProcessor handles all block processing.
 type DefaultProcessor struct {
-	signedMessageValidator SignedMessageValidator
-	blockRewarder          BlockRewarder
-	actors                 builtin.Actors
+	validator     MessageValidator
+	blockRewarder BlockRewarder
+	actors        builtin.Actors
 }
 
 var _ Processor = (*DefaultProcessor)(nil)
@@ -68,18 +76,18 @@ var _ Processor = (*DefaultProcessor)(nil)
 // NewDefaultProcessor creates a default processor from the given state tree and vms.
 func NewDefaultProcessor() *DefaultProcessor {
 	return &DefaultProcessor{
-		signedMessageValidator: NewDefaultMessageValidator(),
-		blockRewarder:          NewDefaultBlockRewarder(),
-		actors:                 builtin.DefaultActors,
+		validator:     NewDefaultMessageValidator(),
+		blockRewarder: NewDefaultBlockRewarder(),
+		actors:        builtin.DefaultActors,
 	}
 }
 
 // NewConfiguredProcessor creates a default processor with custom validation and rewards.
-func NewConfiguredProcessor(validator SignedMessageValidator, rewarder BlockRewarder, actors builtin.Actors) *DefaultProcessor {
+func NewConfiguredProcessor(validator MessageValidator, rewarder BlockRewarder, actors builtin.Actors) *DefaultProcessor {
 	return &DefaultProcessor{
-		signedMessageValidator: validator,
-		blockRewarder:          rewarder,
-		actors:                 actors,
+		validator:     validator,
+		blockRewarder: rewarder,
+		actors:        actors,
 	}
 }
 
@@ -283,7 +291,7 @@ func (p *DefaultProcessor) ProcessTipSet(ctx context.Context, st state.Tree, vms
 //       revert errors.
 //   - everything else: successfully applied (include, keep changes)
 //
-func (p *DefaultProcessor) ApplyMessage(ctx context.Context, st state.Tree, vms vm.StorageMap, msg *types.SignedMessage, minerOwnerAddr address.Address, bh *types.BlockHeight, gasTracker *vm.GasTracker, ancestors []types.TipSet) (result *ApplicationResult, err error) {
+func (p *DefaultProcessor) ApplyMessage(ctx context.Context, st state.Tree, vms vm.StorageMap, msg *types.MeteredMessage, minerOwnerAddr address.Address, bh *types.BlockHeight, gasTracker *vm.GasTracker, ancestors []types.TipSet) (result *ApplicationResult, err error) {
 	msgCid, err := msg.Cid()
 	if err != nil {
 		return nil, errors.FaultErrorWrap(err, "could not get message cid")
@@ -458,8 +466,8 @@ func (p *DefaultProcessor) PreviewQueryMethod(ctx context.Context, st state.Tree
 // should deal with trying to apply the message to the state tree whereas
 // ApplyMessage should deal with any side effects and how it should be presented
 // to the caller. attemptApplyMessage should only be called from ApplyMessage.
-func (p *DefaultProcessor) attemptApplyMessage(ctx context.Context, st *state.CachedTree, store vm.StorageMap, msg *types.SignedMessage, bh *types.BlockHeight, gasTracker *vm.GasTracker, ancestors []types.TipSet) (*types.MessageReceipt, error) {
-	gasTracker.ResetForNewMessage(msg.MeteredMessage)
+func (p *DefaultProcessor) attemptApplyMessage(ctx context.Context, st *state.CachedTree, store vm.StorageMap, msg *types.MeteredMessage, bh *types.BlockHeight, gasTracker *vm.GasTracker, ancestors []types.TipSet) (*types.MessageReceipt, error) {
+	gasTracker.ResetForNewMessage(msg)
 	if err := blockGasLimitError(gasTracker); err != nil {
 		return &types.MessageReceipt{
 			ExitCode:   errors.CodeError(err),
@@ -477,7 +485,7 @@ func (p *DefaultProcessor) attemptApplyMessage(ctx context.Context, st *state.Ca
 		return nil, errors.FaultErrorWrapf(err, "failed to get From actor %s", msg.From)
 	}
 
-	err = p.signedMessageValidator.Validate(ctx, msg, fromActor)
+	err = p.validator.Validate(ctx, msg, fromActor)
 	if err != nil {
 		return &types.MessageReceipt{
 			ExitCode:   errors.CodeError(err),
@@ -566,7 +574,23 @@ func (p *DefaultProcessor) ApplyMessagesAndPayRewards(ctx context.Context, st st
 
 	// process all messages
 	for _, smsg := range messages {
-		r, err := p.ApplyMessage(ctx, st, vms, smsg, minerOwnerAddr, bh, gasTracker, ancestors)
+		// Signatured are expected to have been validated before this point (e.g. before acceptance
+		// into the message pool), so strip the signature. This could actually happen much higher up
+		// the call tree.
+		var r *ApplicationResult
+		var err error
+		if sigErr := p.validator.ValidateSignature(ctx, smsg); sigErr != nil {
+			// FIXME pull some of the complicated error wrapping up from attemptApplyMessage so it can be used here.
+			rcpt :=  &types.MessageReceipt{
+				ExitCode:   errors.CodeError(sigErr),
+				GasAttoFIL: types.ZeroAttoFIL,
+			}
+
+		}
+		if err == nil {
+			r, err = p.ApplyMessage(ctx, st, vms, &smsg.MeteredMessage, minerOwnerAddr, bh, gasTracker, ancestors)
+		}
+
 		// If the message should not have been in the block, bail somehow.
 		switch {
 		case errors.IsFault(err):
@@ -607,9 +631,9 @@ func (br *DefaultBlockRewarder) BlockReward(ctx context.Context, st state.Tree, 
 }
 
 // GasReward transfers the gas cost reward from the sender actor to the minerOwnerAddr
-func (br *DefaultBlockRewarder) GasReward(ctx context.Context, st state.Tree, minerOwnerAddr address.Address, msg *types.SignedMessage, gas types.AttoFIL) error {
+func (br *DefaultBlockRewarder) GasReward(ctx context.Context, st state.Tree, minerOwnerAddr address.Address, msg *types.MeteredMessage, cost types.AttoFIL) error {
 	cachedTree := state.NewCachedStateTree(st)
-	if err := rewardTransfer(ctx, msg.From, minerOwnerAddr, gas, cachedTree); err != nil {
+	if err := rewardTransfer(ctx, msg.From, minerOwnerAddr, cost, cachedTree); err != nil {
 		return errors.FaultErrorWrap(err, "Error attempting to pay gas reward")
 	}
 	return cachedTree.Commit(ctx)
