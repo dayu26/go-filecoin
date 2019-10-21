@@ -14,16 +14,17 @@ import (
 )
 
 func TestMessageFactory(t *testing.T) {
-	signer, keys := types.NewMockSignersAndKeyInfo(1)
-	factory := NewMessageFactory(signer)
-	p := chain.NewMessageProducer(factory)
-
 	gasPrice := big.NewInt(1)
 	gasLimit := state.GasUnit(1000)
 
+	signer, keys := types.NewMockSignersAndKeyInfo(1)
+	factory := NewMessageFactory(signer)
+	p := chain.NewMessageProducer(factory, gasLimit, gasPrice)
+
+
 	sender, err := keys[0].Address()
 	require.NoError(t, err)
-	m, err := p.Transfer(state.Address(sender.Bytes()), state.BurntFundsAddress, big.NewInt(1), gasPrice, gasLimit)
+	m, err := p.Transfer(state.Address(sender.Bytes()), state.BurntFundsAddress, 0, 1)
 	require.NoError(t, err)
 
 	messages := p.Messages()
