@@ -23,11 +23,13 @@ func TestMessageFactory(t *testing.T) {
 
 	sender, err := keys[0].Address()
 	require.NoError(t, err)
-	require.NoError(t, p.Transfer(state.Address(sender.Bytes()), state.BurntFundsAddress, big.NewInt(1), gasPrice, gasLimit))
+	m, err := p.Transfer(state.Address(sender.Bytes()), state.BurntFundsAddress, big.NewInt(1), gasPrice, gasLimit)
+	require.NoError(t, err)
 
 	messages := p.Messages()
 	assert.Equal(t, 1, len(messages))
-	msg := messages[0].(*types.SignedMessage)
+	msg := m.(*types.SignedMessage)
+	assert.Equal(t, m, msg)
 	assert.Equal(t, sender, msg.From)
 	assert.Equal(t, address.BurntFundsAddress, msg.To)
 	assert.Equal(t, types.NewAttoFIL(big.NewInt(1)), msg.Value)
