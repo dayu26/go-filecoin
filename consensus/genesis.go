@@ -24,7 +24,7 @@ import (
 )
 
 // GenesisInitFunc is the signature for function that is used to create a genesis block.
-type GenesisInitFunc func(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, error)
+type GenesisInitFunc func(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, block.TipSet, error)
 
 var (
 	defaultAccounts map[address.Address]types.AttoFIL
@@ -132,7 +132,7 @@ func NewEmptyConfig() *Config {
 
 // MakeGenesisFunc returns a genesis function configured by a set of options.
 func MakeGenesisFunc(opts ...GenOption) GenesisInitFunc {
-	return func(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, error) {
+	return func(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, block.TipSet, error) {
 		ctx := context.Background()
 		st := state.NewEmptyStateTree(cst)
 		storageMap := vm.NewStorageMap(bs)
@@ -140,7 +140,7 @@ func MakeGenesisFunc(opts ...GenOption) GenesisInitFunc {
 		genCfg := NewEmptyConfig()
 		for _, opt := range opts {
 			if err := opt(genCfg); err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 		}
 
@@ -148,11 +148,11 @@ func MakeGenesisFunc(opts ...GenOption) GenesisInitFunc {
 		for addr, val := range genCfg.accounts {
 			a, err := account.NewActor(val)
 			if err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 
 			if err := st.SetActor(ctx, addr, a); err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 		}
 		// Initialize miner actors
@@ -162,43 +162,43 @@ func MakeGenesisFunc(opts ...GenOption) GenesisInitFunc {
 			s := storageMap.NewStorage(addr, a)
 			scid, err := s.Put(val.state)
 			if err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 			if err = s.Commit(scid, a.Head); err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 			if err := st.SetActor(ctx, addr, a); err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 		}
 		for addr, nonce := range genCfg.nonces {
 			a, err := st.GetActor(ctx, addr)
 			if err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 			a.Nonce = types.Uint64(nonce)
 			if err := st.SetActor(ctx, addr, a); err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 		}
 		if err := SetupDefaultActors(ctx, st, storageMap, genCfg.proofsMode, genCfg.network); err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 		// Now add any other actors configured.
 		for addr, a := range genCfg.actors {
 			if err := st.SetActor(ctx, addr, a); err != nil {
-				return nil, err
+				return nil, block.UndefTipSet, err
 			}
 		}
 
 		c, err := st.Flush(ctx)
 		if err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 
 		emptyAMTCid, err := amt.FromArray(amt.WrapBlockstore(bs), []typegen.CBORMarshaler{})
 		if err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 
 		emptyBLSSignature := bls.Aggregate([]bls.Signature{})
@@ -212,15 +212,16 @@ func MakeGenesisFunc(opts ...GenOption) GenesisInitFunc {
 		}
 
 		if _, err := cst.Put(ctx, genesis); err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 
 		err = storageMap.Flush()
 		if err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 
-		return genesis, nil
+		head, err := block.NewTipSet(genesis)
+		return genesis, head, err
 	}
 }
 

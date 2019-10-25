@@ -19,7 +19,7 @@ func Init(ctx context.Context, r repo.Repo, bs bstore.Blockstore, cst *hamt.Cbor
 	// TODO the following should be wrapped in the chain.Store or a sub
 	// interface.
 	// Generate the genesis tipset.
-	genesis, err := gen(cst, bs)
+	genesis, _, err := gen(cst, bs)
 	if err != nil {
 		return nil, err
 	}

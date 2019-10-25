@@ -188,18 +188,58 @@ func loadGenesis(ctx context.Context, rep repo.Repo, sourceName string) (consens
 		return nil, err
 	}
 
-	if len(ch.Roots) != 1 {
-		return nil, fmt.Errorf("expected car with only a single root")
+	// need to check if we are being handed a car file with a single genesis block or an entire chain.
+	bsBlk, err := bs.Get(ch.Roots[0])
+	if err != nil {
+		return nil, err
 	}
-
-	gif := func(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, error) {
-		var blk block.Block
-
-		if err := cst.Get(ctx, ch.Roots[0], &blk); err != nil {
+	cur, err := block.DecodeBlock(bsBlk.RawData())
+	if err != nil {
+		return nil, err
+	}
+	// the root block of the car file has parents, this file must contain a chain
+	for !cur.Parents.Equals(block.UndefTipSet.Key()) {
+		bsBlk, err := bs.Get(cur.Parents.ToSlice()[0])
+		if err != nil {
 			return nil, err
 		}
+		cur, err = block.DecodeBlock(bsBlk.RawData())
+		if err != nil {
+			return nil, err
+		}
+	}
+	genesisBlock := cur
+	// now we have the genesis block, time to get the head tipset
+	var heads []*block.Block
+	for _, c := range ch.Roots {
+		bsBlk, err := bs.Get(c)
+		if err != nil {
+			return nil, err
+		}
+		blk, err := block.DecodeBlock(bsBlk.RawData())
+		if err != nil {
+			return nil, err
+		}
+		heads = append(heads, blk)
+	}
+	headTipSet, err := block.NewTipSet(heads...)
+	if err != nil {
+		return nil, err
+	}
 
-		return &blk, nil
+	gif := func(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, block.TipSet, error) {
+		return genesisBlock, headTipSet, nil
+		/*
+			var blk block.Block
+
+			if err := cst.Get(ctx, ch.Roots[0], &blk); err != nil {
+				return nil, block.UndefTipSet, err
+			}
+
+			head, err := block.NewTipSet(&blk)
+			return &blk, head, err
+
+		*/
 	}
 
 	return gif, nil

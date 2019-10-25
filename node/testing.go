@@ -64,29 +64,30 @@ func MakeChainSeed(t *testing.T, cfg *gengen.GenesisCfg) *ChainSeed {
 }
 
 // GenesisInitFunc is a th.GenesisInitFunc using the chain seed
-func (cs *ChainSeed) GenesisInitFunc(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, error) {
+func (cs *ChainSeed) GenesisInitFunc(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, block.TipSet, error) {
 	keys, err := cs.bstore.AllKeysChan(context.TODO())
 	if err != nil {
-		return nil, err
+		return nil, block.UndefTipSet, err
 	}
 
 	for k := range keys {
 		blk, err := cs.bstore.Get(k)
 		if err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 
 		if err := bs.Put(blk); err != nil {
-			return nil, err
+			return nil, block.UndefTipSet, err
 		}
 	}
 
 	var blk block.Block
 	if err := cst.Get(context.TODO(), cs.info.GenesisCid, &blk); err != nil {
-		return nil, err
+		return nil, block.UndefTipSet, err
 	}
 
-	return &blk, nil
+	head, err := block.NewTipSet(&blk)
+	return &blk, head, err
 }
 
 // GiveKey gives the given key to the given node

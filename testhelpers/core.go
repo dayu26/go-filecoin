@@ -175,10 +175,10 @@ func RequireCreateStorages(ctx context.Context, t *testing.T) (state.Tree, vm.St
 	cst := hamt.NewCborStore()
 	d := datastore.NewMapDatastore()
 	bs := blockstore.NewBlockstore(d)
-	blk, err := DefaultGenesis(cst, bs)
+	genesis, _, err := DefaultGenesis(cst, bs)
 	require.NoError(t, err)
 
-	st, err := state.LoadStateTree(ctx, cst, blk.StateRoot)
+	st, err := state.LoadStateTree(ctx, cst, genesis.StateRoot)
 	require.NoError(t, err)
 
 	vms := vm.NewStorageMap(bs)
@@ -187,7 +187,7 @@ func RequireCreateStorages(ctx context.Context, t *testing.T) (state.Tree, vm.St
 }
 
 // DefaultGenesis creates a test network genesis block with default accounts and actors installed.
-func DefaultGenesis(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, error) {
+func DefaultGenesis(cst *hamt.CborIpldStore, bs blockstore.Blockstore) (*block.Block, block.TipSet, error) {
 	return consensus.MakeGenesisFunc(consensus.Network(version.TEST))(cst, bs)
 }
 

@@ -93,7 +93,7 @@ func TestExpected_RunStateTransition_validateMining(t *testing.T) {
 	ctx := context.Background()
 
 	cistore, bstore := setupCborBlockstore()
-	genesisBlock, err := th.DefaultGenesis(cistore, bstore)
+	genesisBlock, _, err := th.DefaultGenesis(cistore, bstore)
 	require.NoError(t, err)
 	minerPower := types.NewBytesAmount(1)
 	totalPower := types.NewBytesAmount(1)
